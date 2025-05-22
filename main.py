@@ -79,7 +79,7 @@ def open_gui():
 
     # GUI erstellen
     root = tk.Tk()
-    root.title("CSV Eltern-Transformation")
+    root.title("CSV IServ Converter")
 
     tk.Label(root, text="Eingabedatei:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
     input_entry = tk.Entry(root, width=50)
