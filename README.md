@@ -5,7 +5,7 @@
 
 3.1 Wenn sich kein fenster öffnet aus [offizieller Quelle](https://www.python.org) installieren und statt python ab jetzt den befehl python.exe verwenden
 
-# Library installation
+# Bibliotheken installation
 ```
 pip install pandas tkinter
 ```
@@ -13,10 +13,10 @@ Wenn Python aus der offizielllen Quelle installiert wurde dann
 ```
 python.exe -m pip install pandas tkinter
 ```
-# Ausführen der datei
-Den datei Speicherort im CMD öffnen
+# Ausführen der Datei
+Den Datei Speicherort im CMD öffnen
 
-Die datei ausführen
+Die Datei ausführen
 ```
 python main.py
 ```
