@@ -2,6 +2,24 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+GPL_TEXT = """\
+GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+Copyright (C) 2025 Moritz Breier
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license: https://www.gnu.org/licenses/gpl-3.0.html
+"""
 
 def transform_csv(input_path, output_path):
     try:
@@ -35,6 +53,8 @@ def transform_csv(input_path, output_path):
     except Exception as e:
         messagebox.showerror("Fehler", f"Ein Fehler ist aufgetreten:\n{e}")
 
+def show_license():
+    messagebox.showinfo("Lizenz – GPLv3", GPL_TEXT)
 
 def open_gui():
     def select_input_file():
@@ -72,6 +92,14 @@ def open_gui():
     tk.Button(root, text="Speichern unter", command=select_output_file).grid(row=1, column=2, padx=5)
 
     tk.Button(root, text="Start", command=run_transform, width=20).grid(row=2, column=0, columnspan=3, pady=15)
+    # Lizenz-Button unten links
+    tk.Button(root, text="Lizenz anzeigen", command=show_license).grid(row=3, column=0, sticky="w", padx=10, pady=(0, 5))
+
+    # Copyright unten rechts
+    tk.Label(root, text="© 2025 Moritz Breier", font=("Arial", 8), anchor="e").grid(
+        row=3, column=2, sticky="e", padx=10, pady=(0, 5)
+    )
+
 
     root.mainloop()
 
