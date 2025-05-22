@@ -28,7 +28,7 @@ jobs:
 
     - name: Build EXE with PyInstaller
       run: |
-        pyinstaller --onefile --noconsole --clean --noupx --name --icon=icon.ico CSV-IServ-Converter main.py
+        pyinstaller --onefile --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.ico main.py
 
     - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
