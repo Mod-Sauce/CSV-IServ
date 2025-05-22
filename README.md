@@ -16,6 +16,6 @@ python.exe -m pip install pandas tkinter
 # Ausführen der datei
 Den datei Speicherort im CMD öffnen
 
-Die date ausführen
+Die datei ausführen
 ```
 python main.py
