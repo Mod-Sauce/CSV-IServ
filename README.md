@@ -3,7 +3,7 @@
 2. Den befehl ```python``` eingeben
 3. Im jetzt offenen Fenster Installieren
 
-3.1 Wenn sich kein fenster öffnet aus [offizieller Quelle](https://www.python.org) installieren und statt python ab jetzt den befehl python.exe verwenden
+3.1 Wenn sich kein fenster öffnet aus [offizieller Quelle](https://www.python.org) installieren und statt ```python``` ab jetzt den befehl ```python.exe``` verwenden.
 
 # Bibliotheken installation
 ```
