@@ -30,7 +30,7 @@ def transform_csv(input_path, output_path):
 
         # Neue CSV schreiben
         new_df = pd.DataFrame(new_rows)
-        new_df.to_csv(output_path, sep=";", index=False, header=False)
+        new_df.to_csv(output_path, sep=";", index=False, header=False, encoding="utf-8-sig")
         messagebox.showinfo("Erfolg", "Datei erfolgreich verarbeitet.")
     except Exception as e:
         messagebox.showerror("Fehler", f"Ein Fehler ist aufgetreten:\n{e}")
