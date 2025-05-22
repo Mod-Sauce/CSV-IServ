@@ -9,7 +9,7 @@
 ```
 pip install pandas tkinter
 ```
-wen Python aus der offizielllen Quelle installiert wurde dann
+Wenn Python aus der offizielllen Quelle installiert wurde dann
 ```
 python.exe -m pip install pandas tkinter
 ```
@@ -19,3 +19,4 @@ Den datei Speicherort im CMD öffnen
 Die datei ausführen
 ```
 python main.py
+```
