@@ -19,7 +19,10 @@ GNU General Public License for more details.
 
 Full license: https://www.gnu.org/licenses/gpl-3.0.html
 """
-
+NOTICE_TEXT = """\
+Dieses Pogramm kann fehler enthalten.
+Die Output datei sollte dashalb immer Geprüft werden
+"""
 def transform_csv(input_path, output_path):
     try:
         df = pd.read_csv(input_path, sep=";", dtype=str).fillna("")
@@ -54,6 +57,9 @@ def transform_csv(input_path, output_path):
 
 def show_license():
     messagebox.showinfo("Lizenz – GPLv3", GPL_TEXT)
+    
+def show_notice():
+    messagebox.showinfo("Achtung",  NOTICE_TEXT)
 
 def open_gui():
     def select_input_file():
@@ -93,6 +99,7 @@ def open_gui():
     tk.Button(root, text="Start", command=run_transform, width=20).grid(row=2, column=0, columnspan=3, pady=15)
     # Lizenz-Button unten links
     tk.Button(root, text="Lizenz anzeigen", command=show_license).grid(row=3, column=0, sticky="w", padx=10, pady=(0, 5))
+    tk.Button(root, text="Achtung", command=show_notice).grid(row=1, column=0, sticky="w", padx=10, pady=(0, 5))
 
     # Copyright unten rechts
     tk.Label(root, text="© 2025 Moritz Breier", font=("Arial", 8), anchor="e").grid(
