@@ -104,6 +104,7 @@ def open_gui():
     tk.Button(root, text="Start", command=run_transform, width=20).grid(row=2, column=0, columnspan=3, pady=15)
     # Lizenz-Button unten links
     tk.Button(root, text="Lizenz anzeigen", command=show_license).grid(row=3, column=0, sticky="w", padx=10, pady=(0, 5))
+    # Achtung-Button unten Rechts
     tk.Button(root, text="Achtung", command=show_notice).grid(row=1, column=0, sticky="w", padx=10, pady=(0, 5))
 
     # Copyright unten rechts
