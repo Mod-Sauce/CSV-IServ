@@ -85,6 +85,11 @@ def open_gui():
     # GUI erstellen
     root = tk.Tk()
     root.title("CSV IServ Converter")
+    theme_path = os.path.join(os.path.dirname(__file__), "awthemes", "awdark.tcl")
+
+    # Theme aktivieren
+    root.tk.call("source", theme_path)
+    ttk.Style().theme_use("awdark")
 
     tk.Label(root, text="Eingabedatei:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
     input_entry = tk.Entry(root, width=50)
