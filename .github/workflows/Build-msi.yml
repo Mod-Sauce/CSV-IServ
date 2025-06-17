@@ -33,12 +33,12 @@ jobs:
 
     - name: Generate WiX fragment for awthemes
       run: |
-        "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe" dir "dist\CSV-IServ-Converter\awthemes" -cg AwthemesComponentGroup -dr INSTALLFOLDER -scom -sreg -sfrag -o awthemes.wxs
+        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe" dir "dist\CSV-IServ-Converter\awthemes" -cg AwthemesComponentGroup -dr INSTALLFOLDER -scom -sreg -sfrag -o awthemes.wxs
 
     - name: Build MSI
       run: |
-        "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" installer.wxs awthemes.wxs
-        "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -out CSV-IServ-Converter.msi installer.wixobj awthemes.wixobj
+        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" installer.wxs awthemes.wxs
+        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -out CSV-IServ-Converter.msi installer.wixobj awthemes.wixobj
 
     - name: Upload MSI Installer
       uses: actions/upload-artifact@v4

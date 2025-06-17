@@ -33,9 +33,11 @@ jobs:
         curl -L -o is.exe https://jrsoftware.org/download.php/is.exe
         Start-Process -Wait -FilePath is.exe -ArgumentList "/verysilent", "/dir=C:\InnoSetup"
 
-    - name: Build Installer with Inno Setup
+    - name: Build installer with Inno Setup
+      shell: pwsh
       run: |
-        & "C:\InnoSetup\ISCC.exe" installer.iss
+        & "C:\InnoSetup\ISCC.exe" "$(pwd)\installer.iss"
+
 
     - name: Upload Installer
       uses: actions/upload-artifact@v4
