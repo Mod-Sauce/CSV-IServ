@@ -1,0 +1,47 @@
+name: Build Windows MSI Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onedir --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.ico --add-data "awthemes;awthemes" main.py
+
+    - name: Install WiX Toolset
+      run: |
+        choco install wixtoolset -y
+
+    - name: Generate WiX fragment for awthemes
+      run: |
+        "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe" dir "dist\CSV-IServ-Converter\awthemes" -cg AwthemesComponentGroup -dr INSTALLFOLDER -scom -sreg -sfrag -o awthemes.wxs
+
+    - name: Build MSI
+      run: |
+        "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" installer.wxs awthemes.wxs
+        "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -out CSV-IServ-Converter.msi installer.wixobj awthemes.wixobj
+
+    - name: Upload MSI Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: CSV-IServ-Converter-MSI
+        path: CSV-IServ-Converter.msi

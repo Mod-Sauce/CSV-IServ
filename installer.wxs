@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="CSV-IServ-Converter" Language="1033" Version="1.1.0" Manufacturer="MoritzBreier" UpgradeCode="3155c061-eeb9-40ae-90c4-7a03bce158f5">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MediaTemplate />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="CSV-IServ-Converter" />
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="PUT-EXEC-GUID-HERE">
+        <File Source="dist\CSV-IServ-Converter\CSV-IServ-Converter.exe" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="DefaultFeature" Title="CSV-IServ-Converter" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentGroupRef Id="AwthemesComponentGroup" />
+    </Feature>
+  </Product>
+</Wix>
