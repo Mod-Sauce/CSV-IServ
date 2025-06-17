@@ -35,7 +35,7 @@ jobs:
 
     - name: Build Installer with Inno Setup
       run: |
-        "C:\InnoSetup\ISCC.exe" installer.iss
+        & "C:\InnoSetup\ISCC.exe" installer.iss
 
     - name: Upload Installer
       uses: actions/upload-artifact@v4
