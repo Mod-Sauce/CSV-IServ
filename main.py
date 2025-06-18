@@ -1,6 +1,9 @@
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, messagebox
+import customtkinter as ctk
+import os
+import sys
 
 GPL_TEXT = """\
 GNU GENERAL PUBLIC LICENSE
@@ -19,18 +22,24 @@ GNU General Public License for more details.
 
 Full license: https://www.gnu.org/licenses/gpl-3.0.html
 """
+
 NOTICE_TEXT = """\
-Dieses Pogramm kann fehler enthalten.
-Die Output datei sollte dashalb immer Geprüft werden
+Dieses Programm kann Fehler enthalten.
+Die Output-Datei sollte deshalb immer geprüft werden.
 """
+def resource_path(relative_path):
+    """Funktion für PyInstaller-kompatible Pfadauflösung"""
+    try:
+        base_path = sys._MEIPASS  # wenn gepackt
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 def transform_csv(input_path, output_path):
     try:
         df = pd.read_csv(input_path, sep=";", dtype=str).fillna("")
 
-        # Neue Zeilen
         new_rows = []
-
-        # Neue Kopfzeile: feste Struktur plus restliche Spalten ab Index 6
         new_header = ["Vorname", "Nachname", "Adresse"] + df.columns[6:].tolist()
         new_rows.append(new_header)
 
@@ -38,17 +47,14 @@ def transform_csv(input_path, output_path):
             row = df.iloc[i]
             shared_data = row[6:].tolist()
 
-            # Person 1
             if row[0].strip():
                 person1 = [row[0], row[1], row[4]] + shared_data
                 new_rows.append(person1)
 
-            # Person 2 (nur wenn Vorname2 vorhanden)
             if row[2].strip():
                 person2 = [row[2], row[3], row[5]] + shared_data
                 new_rows.append(person2)
 
-        # Neue CSV schreiben
         new_df = pd.DataFrame(new_rows)
         new_df.to_csv(output_path, sep=";", index=False, header=False, encoding="utf-8-sig")
         messagebox.showinfo("Erfolg", "Datei erfolgreich verarbeitet.")
@@ -57,11 +63,22 @@ def transform_csv(input_path, output_path):
 
 def show_license():
     messagebox.showinfo("Lizenz – GPLv3", GPL_TEXT)
-    
+
 def show_notice():
-    messagebox.showinfo("Achtung",  NOTICE_TEXT)
+    messagebox.showinfo("Achtung", NOTICE_TEXT)
 
 def open_gui():
+    ctk.set_appearance_mode("dark")
+    ctk.set_default_color_theme("dark-blue")
+
+    app = ctk.CTk()
+    app.title("CSV IServ Converter")
+    app.geometry("750x200")
+    app.iconbitmap(resource_path("icon.ico"))
+    app.configure(fg_color="#2e2e2e")  # Dark background
+
+    accent_color = "#a64ca6"
+
     def select_input_file():
         path = filedialog.askopenfilename(title="Eingabedatei wählen", filetypes=[("CSV-Dateien", "*.csv")])
         if path:
@@ -82,39 +99,45 @@ def open_gui():
             return
         transform_csv(input_path, output_path)
 
-    # GUI erstellen
-    root = tk.Tk()
-    root.title("CSV IServ Converter")
-    theme_path = os.path.join(os.path.dirname(__file__), "awthemes", "awdark.tcl")
+    padding = {"padx": 10, "pady": 10}
 
-    # Theme aktivieren
-    root.tk.call("source", theme_path)
-    ttk.Style().theme_use("awdark")
+    # Eingabedatei
+    input_label = ctk.CTkLabel(app, text="Eingabedatei:")
+    input_label.grid(row=0, column=0, sticky="w", **padding)
 
-    tk.Label(root, text="Eingabedatei:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-    input_entry = tk.Entry(root, width=50)
-    input_entry.grid(row=0, column=1, padx=5)
-    tk.Button(root, text="Durchsuchen", command=select_input_file).grid(row=0, column=2, padx=5)
+    input_entry = ctk.CTkEntry(app, width=400)
+    input_entry.grid(row=0, column=1, **padding)
 
-    tk.Label(root, text="Ausgabedatei:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-    output_entry = tk.Entry(root, width=50)
-    output_entry.grid(row=1, column=1, padx=5)
-    tk.Button(root, text="Speichern unter", command=select_output_file).grid(row=1, column=2, padx=5)
+    browse_input = ctk.CTkButton(app, text="Durchsuchen", command=select_input_file, corner_radius=20, fg_color=accent_color)
+    browse_input.grid(row=0, column=2, **padding)
 
-    tk.Button(root, text="Start", command=run_transform, width=20).grid(row=2, column=0, columnspan=3, pady=15)
-    # Lizenz-Button unten links
-    tk.Button(root, text="Lizenz anzeigen", command=show_license).grid(row=3, column=0, sticky="w", padx=10, pady=(0, 5))
-    # Achtung-Button unten Rechts
-    tk.Button(root, text="Achtung", command=show_notice).grid(row=1, column=0, sticky="w", padx=10, pady=(0, 5))
+    # Ausgabedatei
+    output_label = ctk.CTkLabel(app, text="Ausgabedatei:")
+    output_label.grid(row=1, column=0, sticky="w", **padding)
 
-    # Copyright unten rechts
-    tk.Label(root, text="© 2025 Moritz Breier", font=("Arial", 8), anchor="e").grid(
-        row=3, column=2, sticky="e", padx=10, pady=(0, 5)
-    )
+    output_entry = ctk.CTkEntry(app, width=400)
+    output_entry.grid(row=1, column=1, **padding)
 
+    browse_output = ctk.CTkButton(app, text="Speichern unter", command=select_output_file, corner_radius=20, fg_color=accent_color)
+    browse_output.grid(row=1, column=2, **padding)
 
-    root.mainloop()
+    # Start-Button
+    run_button = ctk.CTkButton(app, text="Start", command=run_transform, width=200, corner_radius=25, fg_color=accent_color)
+    run_button.grid(row=2, column=0, columnspan=3, pady=20)
 
+    # Lizenz-Button
+    license_button = ctk.CTkButton(app, text="Lizenz anzeigen", command=show_license, corner_radius=15, fg_color="#444")
+    license_button.grid(row=3, column=0, sticky="w", padx=10)
+
+    # Achtung-Button
+    notice_button = ctk.CTkButton(app, text="Achtung", command=show_notice, corner_radius=15, fg_color="#444")
+    notice_button.grid(row=3, column=1, sticky="w", padx=10)
+
+    # Copyright
+    copyright_label = ctk.CTkLabel(app, text="© 2025 Moritz Breier", font=("Arial", 10))
+    copyright_label.grid(row=3, column=2, sticky="e", padx=10)
+
+    app.mainloop()
 
 if __name__ == "__main__":
     open_gui()
