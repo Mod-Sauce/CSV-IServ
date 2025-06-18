@@ -23,11 +23,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pandas pyinstaller
+        pip install pandas pyinstaller customtkinter
 
     - name: Build Windows EXE (onedir)
       run: |
-        pyinstaller --onedir --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.ico --add-data "awthemes;awthemes" main.py
+        pyinstaller CSV-IServ-Converter.spec
 
     - name: Upload Windows Artifact (onedir)
       uses: actions/upload-artifact@v4

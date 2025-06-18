@@ -1,25 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="CSV-IServ-Converter" Language="1033" Version="1.1.0" Manufacturer="MoritzBreier" UpgradeCode="3155c061-eeb9-40ae-90c4-7a03bce158f5">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Product 
+    Id="*" 
+    Name="CSV-IServ-Converter" 
+    Language="1033" 
+    Version="1.1.0" 
+    Manufacturer="MoritzBreier" 
+    UpgradeCode="3155c061-eeb9-40ae-90c4-7a03bce158f5">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
 
     <MediaTemplate />
 
+    <!-- Upgrade Support -->
+    <Upgrade Id="3155c061-eeb9-40ae-90c4-7a03bce158f5">
+      <UpgradeVersion Minimum="1.0.0" Maximum="1.1.0" IncludeMinimum="yes" IncludeMaximum="no" Property="OLDVERSIONFOUND" />
+    </Upgrade>
+
+    <InstallExecuteSequence>
+      <RemoveExistingProducts After="InstallInitialize" />
+    </InstallExecuteSequence>
+
+    <!-- Installationsverzeichnis -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="CSV-IServ-Converter" />
       </Directory>
+      <Directory Id="DesktopFolder" />
     </Directory>
 
+    <!-- Programmdatei -->
     <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="MainExecutable" Guid="PUT-EXEC-GUID-HERE">
-        <File Source="dist\CSV-IServ-Converter\CSV-IServ-Converter.exe" />
+      <Component Id="MainExecutable" Guid="a1c20129-ff21-4ef0-914f-000000000001">
+        <File Id="AppExe" Name="CSV-IServ-Converter.exe" Source="dist\CSV-IServ-Converter\CSV-IServ-Converter.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="ProgramIcon" Guid="a1c20129-ff21-4ef0-914f-000000000002">
+        <File Id="AppIconFile" Name="icon.ico" Source="dist\CSV-IServ-Converter\_internal\icon.ico" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
+    <!-- Desktop-Verknüpfung -->
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="a1c20129-ff21-4ef0-914f-000000000003">
+        <Shortcut Id="desktopShortcut"
+                  Name="CSV-IServ-Converter"
+                  Description="Startet den CSV-IServ-Converter"
+                  Target="[INSTALLFOLDER]CSV-IServ-Converter.exe"
+                  Icon="AppIconFile"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="DesktopFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\CSV-IServ-Converter" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Icon-Definition -->
+    <Icon Id="AppIconFile" SourceFile="dist\CSV-IServ-Converter\icon.ico" />
+
+    <!-- Feature-Verknüpfung -->
     <Feature Id="DefaultFeature" Title="CSV-IServ-Converter" Level="1">
       <ComponentRef Id="MainExecutable" />
-      <ComponentGroupRef Id="AwthemesComponentGroup" />
+      <ComponentRef Id="ProgramIcon" />
+      <ComponentRef Id="DesktopShortcut" />
     </Feature>
+
   </Product>
 </Wix>
