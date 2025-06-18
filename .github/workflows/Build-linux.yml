@@ -29,7 +29,7 @@ jobs:
 
     - name: Build Linux EXE
       run: |
-        pyinstaller --onefile --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.png --add-data "awthemes:awthemes" main.py
+        pyinstaller --onefile --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.png main.py
 
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
