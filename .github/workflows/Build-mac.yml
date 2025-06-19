@@ -26,7 +26,8 @@ jobs:
 
     - name: Build macOS EXE
       run: |
-        pyinstaller --onefile --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.icns --add-data "awthemes:awthemes" main.py
+        pyinstaller --onefile --noconsole --clean --noupx --name CSV-IServ-Converter --icon=icon.icns main.py
+
 
     - name: Upload macOS Artifact
       uses: actions/upload-artifact@v4

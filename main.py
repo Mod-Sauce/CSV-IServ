@@ -27,6 +27,7 @@ NOTICE_TEXT = """\
 Dieses Programm kann Fehler enthalten.
 Die Output-Datei sollte deshalb immer geprüft werden.
 """
+
 def resource_path(relative_path):
     """Funktion für PyInstaller-kompatible Pfadauflösung"""
     try:
@@ -73,11 +74,29 @@ def open_gui():
 
     app = ctk.CTk()
     app.title("CSV IServ Converter")
-    app.geometry("750x200")
+    app.geometry("750x270")
     app.iconbitmap(resource_path("icon.ico"))
-    app.configure(fg_color="#2e2e2e")  # Dark background
 
     accent_color = "#a64ca6"
+    padding = {"padx": 10, "pady": 10}
+
+    # Switch für Light-/Darkmode
+    def toggle_mode():
+        if mode_switch.get():
+            ctk.set_appearance_mode("dark")
+        else:
+            ctk.set_appearance_mode("light")
+
+    mode_switch = ctk.CTkSwitch(app, text="Darkmode", command=toggle_mode)
+    mode_switch.select()  # Start im Darkmode
+    mode_switch.grid(row=0, column=2, sticky="e", padx=10, pady=(10, 0))
+
+    # Eingabedatei
+    input_label = ctk.CTkLabel(app, text="Eingabedatei:")
+    input_label.grid(row=1, column=0, sticky="w", **padding)
+
+    input_entry = ctk.CTkEntry(app, width=400)
+    input_entry.grid(row=1, column=1, **padding)
 
     def select_input_file():
         path = filedialog.askopenfilename(title="Eingabedatei wählen", filetypes=[("CSV-Dateien", "*.csv")])
@@ -85,12 +104,26 @@ def open_gui():
             input_entry.delete(0, tk.END)
             input_entry.insert(0, path)
 
+    browse_input = ctk.CTkButton(app, text="Durchsuchen", command=select_input_file, corner_radius=20, fg_color=accent_color)
+    browse_input.grid(row=1, column=2, **padding)
+
+    # Ausgabedatei
+    output_label = ctk.CTkLabel(app, text="Ausgabedatei:")
+    output_label.grid(row=2, column=0, sticky="w", **padding)
+
+    output_entry = ctk.CTkEntry(app, width=400)
+    output_entry.grid(row=2, column=1, **padding)
+
     def select_output_file():
         path = filedialog.asksaveasfilename(title="Ausgabedatei wählen", defaultextension=".csv", filetypes=[("CSV-Dateien", "*.csv")])
         if path:
             output_entry.delete(0, tk.END)
             output_entry.insert(0, path)
 
+    browse_output = ctk.CTkButton(app, text="Speichern unter", command=select_output_file, corner_radius=20, fg_color=accent_color)
+    browse_output.grid(row=2, column=2, **padding)
+
+    # Start-Button
     def run_transform():
         input_path = input_entry.get()
         output_path = output_entry.get()
@@ -99,43 +132,19 @@ def open_gui():
             return
         transform_csv(input_path, output_path)
 
-    padding = {"padx": 10, "pady": 10}
-
-    # Eingabedatei
-    input_label = ctk.CTkLabel(app, text="Eingabedatei:")
-    input_label.grid(row=0, column=0, sticky="w", **padding)
-
-    input_entry = ctk.CTkEntry(app, width=400)
-    input_entry.grid(row=0, column=1, **padding)
-
-    browse_input = ctk.CTkButton(app, text="Durchsuchen", command=select_input_file, corner_radius=20, fg_color=accent_color)
-    browse_input.grid(row=0, column=2, **padding)
-
-    # Ausgabedatei
-    output_label = ctk.CTkLabel(app, text="Ausgabedatei:")
-    output_label.grid(row=1, column=0, sticky="w", **padding)
-
-    output_entry = ctk.CTkEntry(app, width=400)
-    output_entry.grid(row=1, column=1, **padding)
-
-    browse_output = ctk.CTkButton(app, text="Speichern unter", command=select_output_file, corner_radius=20, fg_color=accent_color)
-    browse_output.grid(row=1, column=2, **padding)
-
-    # Start-Button
     run_button = ctk.CTkButton(app, text="Start", command=run_transform, width=200, corner_radius=25, fg_color=accent_color)
-    run_button.grid(row=2, column=0, columnspan=3, pady=20)
+    run_button.grid(row=3, column=0, columnspan=3, pady=20)
 
-    # Lizenz-Button
+    # Lizenz- und Achtung-Buttons
     license_button = ctk.CTkButton(app, text="Lizenz anzeigen", command=show_license, corner_radius=15, fg_color="#444")
-    license_button.grid(row=3, column=0, sticky="w", padx=10)
+    license_button.grid(row=4, column=0, sticky="w", padx=10)
 
-    # Achtung-Button
     notice_button = ctk.CTkButton(app, text="Achtung", command=show_notice, corner_radius=15, fg_color="#444")
-    notice_button.grid(row=3, column=1, sticky="w", padx=10)
+    notice_button.grid(row=4, column=1, sticky="w", padx=10)
 
     # Copyright
     copyright_label = ctk.CTkLabel(app, text="© 2025 Moritz Breier", font=("Arial", 10))
-    copyright_label.grid(row=3, column=2, sticky="e", padx=10)
+    copyright_label.grid(row=4, column=2, sticky="e", padx=10)
 
     app.mainloop()
 
