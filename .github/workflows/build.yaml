@@ -1,0 +1,130 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 2.1.0)'
+        required: true
+        default: '2.1.0'
+
+env:
+  QT_VERSION: '6.9.1'
+  QT_ARCH: 'win64_mingw'
+  CMAKE_BUILD_TYPE: 'Release'
+  APP_VERSION: ${{ github.event.inputs.version || '2.1.0' }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}-${{ env.QT_ARCH }}
+        
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_mingw'
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        
+    - name: Setup MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+        
+    - name: Create build directory
+      run: mkdir build
+      
+    - name: Configure qmake
+      run: |
+        cd build
+        qmake ../csv_converter.pro CONFIG+=release
+        
+    - name: Build application
+      run: |
+        cd build
+        mingw32-make -j4
+        
+    - name: Create deployment directory
+      run: |
+        mkdir deployment
+        copy build\release\csv_converter.exe deployment\
+        
+    - name: Deploy Qt libraries
+      run: |
+        windeployqt --release --no-translations --no-system-d3d-compiler deployment\csv_converter.exe
+        
+    - name: Copy additional files
+      run: |
+        copy README.md deployment\
+        if exist csv.ico copy csv.ico deployment\
+        
+    - name: Create installer script
+      run: |
+        echo '[Setup]' > installer.iss
+        echo 'AppName=CSV-IServ-Converter' >> installer.iss
+        echo 'AppVersion=${{ env.APP_VERSION }}' >> installer.iss
+        echo 'AppId={{01da2c27-2bf3-41e9-8a7e-a16c3a9205ba}}' >> installer.iss
+        echo 'DefaultDirName={pf}\CSV-IServ-Converter' >> installer.iss
+        echo 'DefaultGroupName=CSV-IServ-Converter' >> installer.iss
+        echo 'OutputDir=.' >> installer.iss
+        echo 'OutputBaseFilename=CSV-IServ-Converter-v${{ env.APP_VERSION }}-Setup' >> installer.iss
+        echo 'Compression=lzma' >> installer.iss
+        echo 'SolidCompression=yes' >> installer.iss
+        echo 'WizardStyle=modern' >> installer.iss
+        echo 'ArchitecturesAllowed=x64' >> installer.iss
+        echo 'ArchitecturesInstallIn64BitMode=x64' >> installer.iss
+        echo '' >> installer.iss
+        echo '[Languages]' >> installer.iss
+        echo 'Name: "german"; MessagesFile: "compiler:Languages\German.isl"' >> installer.iss
+        echo 'Name: "english"; MessagesFile: "compiler:Default.isl"' >> installer.iss
+        echo '' >> installer.iss
+        echo '[Tasks]' >> installer.iss
+        echo 'Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked' >> installer.iss
+        echo '' >> installer.iss
+        echo '[Files]' >> installer.iss
+        echo 'Source: "deployment\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs' >> installer.iss
+        echo '' >> installer.iss
+        echo '[Icons]' >> installer.iss
+        echo 'Name: "{group}\CSV-IServ-Converter"; Filename: "{app}\csv_converter.exe"' >> installer.iss
+        echo 'Name: "{commondesktop}\CSV-IServ-Converter"; Filename: "{app}\csv_converter.exe"; Tasks: desktopicon' >> installer.iss
+        echo '' >> installer.iss
+        echo '[Run]' >> installer.iss
+        echo 'Filename: "{app}\csv_converter.exe"; Description: "{cm:LaunchProgram,CSV-IServ-Converter}"; Flags: nowait postinstall skipifsilent' >> installer.iss
+        
+    - name: Setup Inno Setup
+      run: |
+        choco install innosetup --yes
+        
+    - name: Build installer
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        
+    - name: Create portable zip
+      run: |
+        Compress-Archive -Path deployment\* -DestinationPath CSV-IServ-Converter-v${{ env.APP_VERSION }}-Portable.zip
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: CSV-IServ-Converter-v${{ env.APP_VERSION }}-Windows
+        path: |
+          CSV-IServ-Converter-v${{ env.APP_VERSION }}-Setup.exe
+          CSV-IServ-Converter-v${{ env.APP_VERSION }}-Portable.zip
+        retention-days: 30
