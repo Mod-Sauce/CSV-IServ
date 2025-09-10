@@ -25,13 +25,16 @@ win32 {
     DEFINES += WINVER=0x0A00 _WIN32_WINNT=0x0A00
 }
 
+# Qt 6 specific settings
+greaterThan(QT_MAJOR_VERSION, 5): QT += core5compat
+
 # Compiler flags
-QMAKE_CXXFLAGS += -std=c++17
+QMAKE_CXXFLAGS += /std:c++17
 
 # Release optimizations
 CONFIG(release, debug|release) {
     DEFINES += QT_NO_DEBUG_OUTPUT
-    QMAKE_CXXFLAGS_RELEASE += -O2
+    QMAKE_CXXFLAGS_RELEASE += /O2
 }
 
 # Debug settings
