@@ -13,7 +13,7 @@
 #include <QPalette>
 #include <QSettings>
 #include <QFrame>
-#include <QTextCodec>
+#include <QStringConverter>
 
 const QString GPL_TEXT = R"(GNU GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007
@@ -40,9 +40,9 @@ void transform_csv(const QString &input_path, const QString &output_path) {
     QTextStream in(&inFile);
     QTextStream out(&outFile);
     
-    // UTF-8 Encoding für Umlaute
-    in.setCodec("UTF-8");
-    out.setCodec("UTF-8");
+    // UTF-8 Encoding für Umlaute (Qt 6 Syntax)
+    in.setEncoding(QStringConverter::Utf8);
+    out.setEncoding(QStringConverter::Utf8);
     
     QStringList headers;
     QList<QStringList> new_rows;
@@ -295,9 +295,6 @@ QString getLightModeStyles() {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    
-    // UTF-8 Support für Umlaute
-    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
     
     // App-Einstellungen
     app.setOrganizationName("MoritzBreier");
