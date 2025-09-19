@@ -40,9 +40,15 @@ void transform_csv(const QString &input_path, const QString &output_path) {
     QTextStream in(&inFile);
     QTextStream out(&outFile);
     
-    // UTF-8 Encoding für Umlaute (Qt 6 Syntax)
+    // UTF-8 Encoding für Qt 6 - KORRIGIERT
+    auto utf8Decoder = QStringDecoder(QStringDecoder::Utf8);
+    auto utf8Encoder = QStringEncoder(QStringEncoder::Utf8);
+    
     in.setEncoding(QStringConverter::Utf8);
     out.setEncoding(QStringConverter::Utf8);
+    
+    // Alternative: Explizit UTF-8 BOM schreiben (falls nötig)
+    // out << "\xEF\xBB\xBF";
     
     QStringList headers;
     QList<QStringList> new_rows;
@@ -71,6 +77,9 @@ void transform_csv(const QString &input_path, const QString &output_path) {
     for (const auto &row : new_rows) {
         out << row.join(";") << "\n";
     }
+
+    inFile.close();
+    outFile.close();
 
     QMessageBox::information(nullptr, "Erfolg", "Datei erfolgreich verarbeitet.");
 }
