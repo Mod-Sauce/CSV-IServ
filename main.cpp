@@ -26,36 +26,40 @@ Die Output-Datei sollte deshalb immer geprüft werden.)";
 
 void transform_csv(const QString &input_path, const QString &output_path) {
     QFile inFile(input_path);
-    QFile outFile(output_path);
-
-    if (!inFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (!inFile.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(nullptr, "Fehler", "Konnte Eingabedatei nicht öffnen.");
         return;
     }
-    if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+
+    QByteArray rawData = inFile.readAll();
+    inFile.close();
+
+    // UTF-8 Versuch
+    QString text = QString::fromUtf8(rawData);
+    bool isUtf8 = !text.contains(QChar::ReplacementCharacter); //   = kaputt
+
+    if (!isUtf8) {
+        text = QString::fromLatin1(rawData); // Fallback
+    }
+
+    QFile outFile(output_path);
+    if (!outFile.open(QIODevice::WriteOnly)) {
         QMessageBox::warning(nullptr, "Fehler", "Konnte Ausgabedatei nicht schreiben.");
         return;
     }
 
-    QTextStream in(&inFile);
     QTextStream out(&outFile);
-    
-    // UTF-8 Encoding für Qt 6 - KORRIGIERT
-    auto utf8Decoder = QStringDecoder(QStringDecoder::Utf8);
-    auto utf8Encoder = QStringEncoder(QStringEncoder::Utf8);
-    
-    in.setEncoding(QStringConverter::Utf8);
-    out.setEncoding(QStringConverter::Utf8);
-    
-    // Alternative: Explizit UTF-8 BOM schreiben (falls nötig)
-    // out << "\xEF\xBB\xBF";
-    
+    if (isUtf8)
+        out.setEncoding(QStringConverter::Utf8);
+    else
+        out.setEncoding(QStringConverter::Latin1);
+
+    QStringList lines = text.split('\n', Qt::SkipEmptyParts);
     QStringList headers;
     QList<QStringList> new_rows;
-
     bool firstLine = true;
-    while (!in.atEnd()) {
-        QString line = in.readLine();
+
+    for (const QString &line : lines) {
         QStringList row = line.split(";");
 
         if (firstLine) {
@@ -78,9 +82,7 @@ void transform_csv(const QString &input_path, const QString &output_path) {
         out << row.join(";") << "\n";
     }
 
-    inFile.close();
     outFile.close();
-
     QMessageBox::information(nullptr, "Erfolg", "Datei erfolgreich verarbeitet.");
 }
 
@@ -311,7 +313,7 @@ int main(int argc, char *argv[]) {
     
     QWidget window;
     window.setWindowTitle("CSV IServ Converter");
-    window.setFixedSize(700, 400);
+    window.setFixedSize(750, 450);
     window.setWindowIcon(QIcon(":/csv.ico"));
 
     // Settings für persistente Speicherung
@@ -350,7 +352,7 @@ int main(int argc, char *argv[]) {
     auto *inputLayout = new QHBoxLayout();
     auto *inputLine = new QLineEdit();
     inputLine->setPlaceholderText("Wählen Sie eine CSV-Datei aus...");
-    auto *browseInput = new QPushButton("📂 Durchsuchen");
+    auto *browseInput = new QPushButton("Durchsuchen");
     browseInput->setFixedWidth(140);
     
     inputLayout->addWidget(inputLine, 1);
@@ -369,7 +371,7 @@ int main(int argc, char *argv[]) {
     auto *outputLayout = new QHBoxLayout();
     auto *outputLine = new QLineEdit();
     outputLine->setPlaceholderText("Geben Sie den Speicherort an...");
-    auto *browseOutput = new QPushButton("💾 Speichern unter");
+    auto *browseOutput = new QPushButton("Speichern unter");
     browseOutput->setFixedWidth(140);
     
     outputLayout->addWidget(outputLine, 1);
@@ -392,8 +394,8 @@ int main(int argc, char *argv[]) {
     auto *licenseBtn = new QPushButton("📄 Lizenz");
     auto *noticeBtn = new QPushButton("⚠️ Hinweis");
     
-    licenseBtn->setFixedWidth(100);
-    noticeBtn->setFixedWidth(100);
+    licenseBtn->setFixedWidth(110);
+    noticeBtn->setFixedWidth(110);
     
     auto *copyrightLabel = new QLabel("© 2025 Moritz Breier");
     copyrightLabel->setStyleSheet("color: #888; font-size: 11px;");
