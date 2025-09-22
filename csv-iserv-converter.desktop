@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=2.1.2
+Type=Application
+Name=CSV IServ Converter
+Name[de]=CSV IServ Konverter
+Comment=Convert CSV files for IServ import
+Comment[de]=CSV-Dateien für IServ-Import konvertieren
+GenericName=CSV Converter
+GenericName[de]=CSV-Konverter
+Exec=csv-iserv-converter
+Icon=csv
+Terminal=false
+StartupNotify=true
+Categories=Office;Utility;
+Keywords=csv;convert;iserv;import;
+Keywords[de]=csv;konvertieren;iserv;import;
+MimeType=text/csv;text/plain;
