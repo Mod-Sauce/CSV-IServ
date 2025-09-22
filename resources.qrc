@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="/">
     <file>csv.ico</file>
+    <file>csv.png</file>
   </qresource>
 </RCC>
+
