@@ -9,11 +9,13 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QIcon>
 #include <QPalette>
 #include <QSettings>
 #include <QFrame>
 #include <QStringConverter>
+#include <QTextCodec>
 
 const QString GPL_TEXT = R"(GNU GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007
@@ -24,37 +26,178 @@ Full license: https://www.gnu.org/licenses/gpl-3.0.html)";
 const QString NOTICE_TEXT = R"(Dieses Programm kann Fehler enthalten.
 Die Output-Datei sollte deshalb immer geprüft werden.)";
 
-void transform_csv(const QString &input_path, const QString &output_path) {
-    QFile inFile(input_path);
-    if (!inFile.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(nullptr, "Fehler", "Konnte Eingabedatei nicht öffnen.");
-        return;
+struct EncodingInfo {
+    QString name;
+    QString displayName;
+    QStringConverter::Encoding encoding;
+};
+
+const QList<EncodingInfo> ENCODINGS = {
+    {"auto", "Auto (Automatische Erkennung)", QStringConverter::Utf8},
+    {"utf8", "UTF-8 (Standard Linux/Mac/Web)", QStringConverter::Utf8},
+    {"utf16", "UTF-16 (Excel/Windows Export)", QStringConverter::Utf16},
+    {"utf16le", "UTF-16 LE (Little Endian)", QStringConverter::Utf16LE},
+    {"utf16be", "UTF-16 BE (Big Endian)", QStringConverter::Utf16BE},
+    {"latin1", "ISO-8859-1 (Latin-1, Westeuropäisch)", QStringConverter::Latin1},
+    {"windows1252", "Windows-1252 (Microsoft Latin-1)", QStringConverter::Latin1}, // Approximation
+    {"ascii", "ASCII (nur Grundzeichen)", QStringConverter::Latin1}, // Subset of Latin1
+    {"latin9", "ISO-8859-15 (Latin-9, mit €)", QStringConverter::Latin1}, // Approximation
+};
+
+QString detectEncoding(const QByteArray &rawData) {
+    // BOM-Erkennung
+    if (rawData.startsWith("\xEF\xBB\xBF")) return "utf8";
+    if (rawData.startsWith("\xFF\xFE")) return "utf16le";
+    if (rawData.startsWith("\xFE\xFF")) return "utf16be";
+    
+    // UTF-8 Test
+    QString testUtf8 = QString::fromUtf8(rawData);
+    if (!testUtf8.contains(QChar::ReplacementCharacter)) {
+        // Weitere Prüfung: Enthält es typische UTF-8 Multi-Byte-Sequenzen?
+        QByteArray utf8Bytes = testUtf8.toUtf8();
+        if (utf8Bytes == rawData) return "utf8";
     }
-
-    QByteArray rawData = inFile.readAll();
-    inFile.close();
-
-    // UTF-8 Versuch
-    QString text = QString::fromUtf8(rawData);
-    bool isUtf8 = !text.contains(QChar::ReplacementCharacter); //   = kaputt
-
-    if (!isUtf8) {
-        text = QString::fromLatin1(rawData); // Fallback
+    
+    // ASCII Test (nur druckbare Zeichen + Steuerzeichen)
+    bool isAscii = true;
+    for (unsigned char byte : rawData) {
+        if (byte > 127) {
+            isAscii = false;
+            break;
+        }
     }
+    if (isAscii) return "ascii";
+    
+    // Latin-1/Windows-1252 Test (sehr häufig bei CSV)
+    QString testLatin1 = QString::fromLatin1(rawData);
+    
+    // Heuristische Prüfung auf typische Windows-1252 Zeichen
+    int windows1252Score = 0;
+    QList<unsigned char> windows1252Chars = {
+        0x80, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C,
+        0x8E, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 
+        0x9C, 0x9E, 0x9F // Typische Windows-1252 Zeichen in 0x80-0x9F Bereich
+    };
+    
+    for (unsigned char byte : rawData) {
+        if (windows1252Chars.contains(byte)) {
+            windows1252Score++;
+        }
+    }
+    
+    if (windows1252Score > 0) return "windows1252";
+    
+    // Fallback auf Latin-1
+    return "latin1";
+}
 
-    QFile outFile(output_path);
+struct FileEncodingResult {
+    QString text;
+    QString actualEncoding;
+    bool hadBOM;
+};
+
+FileEncodingResult readFileWithEncoding(const QString &filePath, const QString &encodingName) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {"", "", false};
+    }
+    
+    QByteArray rawData = file.readAll();
+    file.close();
+    
+    QString actualEncoding = encodingName;
+    if (encodingName == "auto") {
+        actualEncoding = detectEncoding(rawData);
+    }
+    
+    bool hadBOM = false;
+    
+    // BOM entfernen falls vorhanden und merken
+    if (actualEncoding == "utf8" && rawData.startsWith("\xEF\xBB\xBF")) {
+        rawData = rawData.mid(3);
+        hadBOM = true;
+    } else if ((actualEncoding == "utf16le" && rawData.startsWith("\xFF\xFE")) ||
+               (actualEncoding == "utf16be" && rawData.startsWith("\xFE\xFF"))) {
+        rawData = rawData.mid(2);
+        hadBOM = true;
+    }
+    
+    QString text;
+    if (actualEncoding == "utf8") {
+        text = QString::fromUtf8(rawData);
+    } else if (actualEncoding == "utf16le") {
+        text = QString::fromUtf16(reinterpret_cast<const char16_t*>(rawData.constData()), rawData.size() / 2);
+    } else if (actualEncoding == "utf16be") {
+        // UTF-16 BE manuell konvertieren
+        QByteArray swapped;
+        for (int i = 0; i < rawData.size() - 1; i += 2) {
+            swapped.append(rawData[i + 1]);
+            swapped.append(rawData[i]);
+        }
+        text = QString::fromUtf16(reinterpret_cast<const char16_t*>(swapped.constData()), swapped.size() / 2);
+    } else {
+        // Latin-1, Windows-1252, ASCII
+        text = QString::fromLatin1(rawData);
+    }
+    
+    return {text, actualEncoding, hadBOM};
+}
+
+void writeFileWithEncoding(const QString &filePath, const QString &text, const QString &encoding, bool includeBOM = false) {
+    QFile outFile(filePath);
     if (!outFile.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(nullptr, "Fehler", "Konnte Ausgabedatei nicht schreiben.");
+        return;
+    }
+    
+    if (encoding == "utf8") {
+        if (includeBOM) {
+            outFile.write("\xEF\xBB\xBF"); // UTF-8 BOM
+        }
+        outFile.write(text.toUtf8());
+    } else if (encoding == "utf16le") {
+        if (includeBOM) {
+            outFile.write("\xFF\xFE"); // UTF-16 LE BOM
+        }
+        QByteArray utf16Data = text.toUtf8(); // Convert to UTF-8 first
+        QString utf16Text = QString::fromUtf8(utf16Data); // Then to QString
+        QByteArray utf16Bytes;
+        for (const QChar &c : utf16Text) {
+            quint16 unicode = c.unicode();
+            utf16Bytes.append(static_cast<char>(unicode & 0xFF)); // Low byte
+            utf16Bytes.append(static_cast<char>((unicode >> 8) & 0xFF)); // High byte
+        }
+        outFile.write(utf16Bytes);
+    } else if (encoding == "utf16be") {
+        if (includeBOM) {
+            outFile.write("\xFE\xFF"); // UTF-16 BE BOM
+        }
+        QByteArray utf16Data = text.toUtf8(); // Convert to UTF-8 first
+        QString utf16Text = QString::fromUtf8(utf16Data); // Then to QString
+        QByteArray utf16Bytes;
+        for (const QChar &c : utf16Text) {
+            quint16 unicode = c.unicode();
+            utf16Bytes.append(static_cast<char>((unicode >> 8) & 0xFF)); // High byte first
+            utf16Bytes.append(static_cast<char>(unicode & 0xFF)); // Low byte
+        }
+        outFile.write(utf16Bytes);
+    } else {
+        // Latin-1, Windows-1252, ASCII - use Latin-1 encoding
+        outFile.write(text.toLatin1());
+    }
+    
+    outFile.close();
+}
+
+void transform_csv(const QString &input_path, const QString &output_path, const QString &encoding) {
+    FileEncodingResult result = readFileWithEncoding(input_path, encoding);
+    
+    if (result.text.isEmpty()) {
+        QMessageBox::warning(nullptr, "Fehler", "Konnte Eingabedatei nicht öffnen oder lesen.");
         return;
     }
 
-    QTextStream out(&outFile);
-    if (isUtf8)
-        out.setEncoding(QStringConverter::Utf8);
-    else
-        out.setEncoding(QStringConverter::Latin1);
-
-    QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+    QStringList lines = result.text.split('\n', Qt::SkipEmptyParts);
     QStringList headers;
     QList<QStringList> new_rows;
     bool firstLine = true;
@@ -78,12 +221,23 @@ void transform_csv(const QString &input_path, const QString &output_path) {
         }
     }
 
+    // Zusammenbauen des Outputs
+    QString outputText;
     for (const auto &row : new_rows) {
-        out << row.join(";") << "\n";
+        outputText += row.join(";") + "\n";
     }
 
-    outFile.close();
-    QMessageBox::information(nullptr, "Erfolg", "Datei erfolgreich verarbeitet.");
+    // In gleicher Kodierung wie Input speichern
+    writeFileWithEncoding(output_path, outputText, result.actualEncoding, result.hadBOM);
+
+    QString encodingInfo = result.actualEncoding.toUpper();
+    if (result.hadBOM) {
+        encodingInfo += " (mit BOM)";
+    }
+    
+    QMessageBox::information(nullptr, "Erfolg", 
+        QString("Datei erfolgreich verarbeitet.\nKodierung: %1").arg(encodingInfo));
+}
 }
 
 QString getDarkModeStyles() {
@@ -145,6 +299,44 @@ QString getDarkModeStyles() {
         
         QLineEdit:hover {
             border-color: #5a5a5a;
+        }
+        
+        QComboBox {
+            background: #1e1e1e;
+            color: #e0e0e0;
+            border: 2px solid #404040;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            min-width: 200px;
+        }
+        
+        QComboBox:hover {
+            border-color: #5a5a5a;
+        }
+        
+        QComboBox:focus {
+            border-color: #4a9eff;
+        }
+        
+        QComboBox::drop-down {
+            border: none;
+            width: 20px;
+        }
+        
+        QComboBox::down-arrow {
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #e0e0e0;
+            margin-right: 5px;
+        }
+        
+        QComboBox QAbstractItemView {
+            background: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #404040;
+            selection-background-color: #4a9eff;
         }
         
         QCheckBox {
@@ -256,6 +448,44 @@ QString getLightModeStyles() {
             border-color: #c0c0c0;
         }
         
+        QComboBox {
+            background: white;
+            color: #333333;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            min-width: 200px;
+        }
+        
+        QComboBox:hover {
+            border-color: #c0c0c0;
+        }
+        
+        QComboBox:focus {
+            border-color: #4a9eff;
+        }
+        
+        QComboBox::drop-down {
+            border: none;
+            width: 20px;
+        }
+        
+        QComboBox::down-arrow {
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #333333;
+            margin-right: 5px;
+        }
+        
+        QComboBox QAbstractItemView {
+            background: white;
+            color: #333333;
+            border: 1px solid #e0e0e0;
+            selection-background-color: #4a9eff;
+        }
+        
         QCheckBox {
             color: #333333;
             font-size: 13px;
@@ -313,12 +543,13 @@ int main(int argc, char *argv[]) {
     
     QWidget window;
     window.setWindowTitle("CSV IServ Converter");
-    window.setFixedSize(750, 450);
+    window.setFixedSize(750, 500);
     window.setWindowIcon(QIcon(":/csv.ico"));
 
     // Settings für persistente Speicherung
     QSettings settings;
     bool darkMode = settings.value("darkMode", true).toBool();
+    QString lastEncoding = settings.value("encoding", "auto").toString();
 
     auto *mainLayout = new QVBoxLayout();
     mainLayout->setSpacing(20);
@@ -341,6 +572,24 @@ int main(int argc, char *argv[]) {
     headerLayout->addWidget(darkModeToggle);
     
     mainLayout->addWidget(headerFrame);
+
+    // Kodierung Sektion
+    auto *encodingSection = new QVBoxLayout();
+    encodingSection->setSpacing(10);
+    
+    auto *encodingLabel = new QLabel("🔤 Zeichenkodierung der Eingabedatei:");
+    encodingLabel->setStyleSheet("font-size: 14px; font-weight: 600;");
+    
+    auto *encodingCombo = new QComboBox();
+    for (const auto &encoding : ENCODINGS) {
+        encodingCombo->addItem(encoding.displayName, encoding.name);
+        if (encoding.name == lastEncoding) {
+            encodingCombo->setCurrentIndex(encodingCombo->count() - 1);
+        }
+    }
+    
+    encodingSection->addWidget(encodingLabel);
+    encodingSection->addWidget(encodingCombo);
 
     // Input Datei Sektion
     auto *inputSection = new QVBoxLayout();
@@ -384,6 +633,7 @@ int main(int argc, char *argv[]) {
     auto *startButton = new QPushButton("🚀 Konvertierung starten");
     startButton->setStyleSheet("font-size: 16px; font-weight: bold; min-height: 40px;");
 
+    mainLayout->addLayout(encodingSection);
     mainLayout->addLayout(inputSection);
     mainLayout->addLayout(outputSection);
     mainLayout->addWidget(startButton);
@@ -433,7 +683,11 @@ int main(int argc, char *argv[]) {
                 "Bitte geben Sie sowohl eine Eingabe- als auch eine Ausgabedatei an.");
             return;
         }
-        transform_csv(inputLine->text(), outputLine->text());
+        
+        QString selectedEncoding = encodingCombo->currentData().toString();
+        settings.setValue("encoding", selectedEncoding);
+        
+        transform_csv(inputLine->text(), outputLine->text(), selectedEncoding);
     });
 
     QObject::connect(licenseBtn, &QPushButton::clicked, [&]() {
