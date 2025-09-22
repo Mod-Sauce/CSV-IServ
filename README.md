@@ -14,6 +14,6 @@ sudo make install  # Optional, für System-Installation
 
 # Build From Source
 
-Leider kann ich momentan keine Anleitug bereitstellen
+Die .pro datei in QtCreator öffnen und bauen
 
 linux wird standartmäsig so installiert
