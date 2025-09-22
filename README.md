@@ -13,7 +13,8 @@ sudo make install  # Optional, für System-Installation
 
 
 # Build From Source
+Windows und Linux:
+Die .pro datei in [QtCreator](https://www.qt.io/product/development-tools) öffnen und bauen
 
-Die .pro datei in QtCreator öffnen und bauen
-
-linux wird standartmäsig so installiert
+Linux: 
+Standart installation folgen
